@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>轩生日快乐</title>
+    <style>
+        /* 重置默认样式 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background-image: url('image/xuan.jpg');
+            background-repeat: no-repeat;
+            background-size: cover;
+            background-attachment: fixed;
+            background-position: center center;
+            font-family: "微软雅黑", sans-serif;
+            overflow: hidden;
+        }
+        #fireworkCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1;
+            pointer-events: none;
+        }
+        main.content-main {
+            position: relative;
+            z-index: 2;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            pointer-events: none;
+        }
+        h1 {
+            color: red;
+            font-size: 28px;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        h2, h3 {
+            font-size: 25px;
+            margin-bottom: 10px;
+            color: aqua;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+            line-height: 1.6;
+        }
+        h3 {
+            font-style: italic;
+            margin-top: 30px;
+        }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 1.8rem; }
+            h2 { font-size: 1.2rem; }
+            h3 { font-size: 1rem; }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="fireworkCanvas"></canvas>
+    
+    <main class="content-main">
+        <h1>祝轩轩生日快乐!</h1>
+        <h2>
+            先恭喜你又长大了一岁，希望在新的一年里，<br>
+            希望你能被好运眷顾，健康平安，财运亨通，<br>
+            希望你在明年的高考中能取得最好成绩如愿以偿，<br>
+            希望你岁岁无忧，年年有我，友谊长存，天长地久。
+        </h2>
+        <h3>----木杉</h3>
+    </main>
+
+    <script>
+        // 烟花特效脚本
+        const canvas = document.getElementById('fireworkCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        const config = {
+            firework: {
+                speed: 15,          // 增加初始速度
+                spawnRate: 0.03,
+                particleCount: 120, // 增加粒子数量
+                targetHeight: 0.15  // 提高爆炸高度比例
+            },
+            particle: {
+                minVelocity: 3,     // 增加最小速度
+                maxVelocity: 10,    // 增加最大速度
+                gravity: 0.3,       // 减小重力影响
+                friction: 0.92,    // 调整摩擦力
+                fadeSpeed: 0.01     // 减慢消失速度
+            }
+        };
+
+        const colors = [
+            '#FF3333', '#FF66B2', '#E040FB',
+            '#7C4DFF', '#5386FE', '#44AAFF',
+            '#40D4FF', '#18FFFF', '#64FFDA',
+            '#69F0AE'
+        ];
+
+        let fireworks = [];
+        let particles = [];
+
+        class Firework {
+            constructor(startX, targetY) {
+                this.x = startX || Math.random() * canvas.width;
+                this.y = canvas.height;
+                this.targetY = targetY || canvas.height * config.firework.targetHeight;
+                this.speed = config.firework.speed;
+                this.acceleration = 0.96;  // 调整加速度系数
+                this.color = colors[Math.floor(Math.random() * colors.length)];
+                this.active = true;
+            }
+
+            update() {
+                this.speed *= this.acceleration;
+                this.y -= this.speed;
+                
+                // 添加随机偏移增加真实感
+                this.x += Math.sin(Date.now()*0.002) * 0.5;
+
+                if (this.y <= this.targetY) {
+                    this.explode();
+                    this.active = false;
+                }
+            }
+
+            explode() {
+                for (let i = 0; i < config.firework.particleCount; i++) {
+                    particles.push(new Particle(this.x, this.y, this.color));
+                }
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 3, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+            }
+        }
+
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.color = color;
+                this.angle = Math.random() * Math.PI * 2;
+                this.velocity = Math.random() * 
+                    (config.particle.maxVelocity - config.particle.minVelocity) + 
+                    config.particle.minVelocity;
+                this.friction = config.particle.friction;
+                this.gravity = config.particle.gravity;
+                this.alpha = 1;
+                this.size = Math.random() * 2 + 1; // 随机粒子大小
+            }
+
+            update() {
+                this.velocity *= this.friction;
+                this.x += Math.cos(this.angle) * this.velocity;
+                this.y += Math.sin(this.angle) * this.velocity + this.gravity;
+                this.alpha -= config.particle.fadeSpeed;
+                this.size *= 0.98; // 逐渐缩小粒子
+            }
+
+            draw() {
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.globalAlpha = this.alpha;
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        function animate() {
+            // 使用更透明的背景叠加（0.05透明度）
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 随机生成新烟花（添加边界限制）
+            if (Math.random() < config.firework.spawnRate && fireworks.length < 20) {
+                fireworks.push(new Firework());
+            }
+
+            // 更新并绘制烟花
+            fireworks = fireworks.filter(firework => {
+                if (firework.active) {
+                    firework.update();
+                    firework.draw();
+                    return true;
+                }
+                return false;
+            });
+
+            // 更新并绘制粒子（添加抛物线效果）
+            particles = particles.filter(particle => {
+                particle.update();
+                particle.draw();
+                return particle.alpha > 0.1;
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        // 点击事件处理（添加边界检测）
+        canvas.addEventListener('click', (e) => {
+            const clickY = Math.min(e.clientY, canvas.height * 0.8);
+            fireworks.push(new Firework(e.clientX, clickY));
+        });
+
+        // 启动动画
+        animate();
+    </script>
+</body>
+</html>
